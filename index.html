@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Turtle Web Zeichnung</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 20px;
+    }
+
+    canvas {
+      border: 1px solid #aaa;
+      background: #f9f9f9;
+    }
+
+    button, label {
+      margin: 5px;
+      padding: 10px 15px;
+      font-weight: bold;
+      background: #94B9D8;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    input[type=range] {
+      width: 150px;
+    }
+
+    .layout {
+      display: flex;
+      align-items: flex-start;
+      gap: 30px;
+    }
+
+    .controls {
+      margin-bottom: 20px;
+    }
+
+    #stepImage {
+      width: 400px;
+      max-height: 600px;
+      object-fit: contain;
+      display: none;
+      border: 1px solid #ccc;
+      background: #fff;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="controls">
+    <button onclick="drawAll()">Zeichne alles</button>
+    <button onclick="step1()">Step 1</button>
+    <button onclick="step2()">Step 2</button>
+    <button onclick="step3()">Step 3</button>
+    <button onclick="step4()">Step 4</button>
+    <button onclick="step5()">Step 5</button>
+    <button onclick="step6()">Step 6</button>
+    <button onclick="step7()">Step 7</button>
+    <label>Geschwindigkeit:
+      <input type="range" min="1" max="10" value="4" id="speedSlider" />
+    </label>
+  </div>
+
+  <div class="layout">
+    <canvas id="canvas" width="800" height="600"></canvas>
+    <img id="stepImage" src="" alt="Step Illustration" />
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    let speed = 4;
+    let pos = { x: 200, y: 400 };
+    let angle = 0;
+    let p0 = {...pos}, p1, p2, p3, p4, p5, p6;
+    let drawnLines = [];
+
+    document.getElementById('speedSlider').addEventListener('input', e => {
+      speed = parseInt(e.target.value);
+    });
+
+    function showStepImage(n) {
+      const img = document.getElementById('stepImage');
+      img.src = `images/step${n}.png`;
+      img.style.display = 'block';
+    }
+
+    function hideStepImage() {
+      document.getElementById('stepImage').style.display = 'none';
+    }
+
+    function drawArrowhead(x, y, angleRad) {
+      const size = 10;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angleRad);
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(-size, size / 2);
+      ctx.lineTo(-size, -size / 2);
+      ctx.closePath();
+      ctx.fillStyle = 'black';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function setHeading(deg) {
+      angle = (360 - deg) * Math.PI / 180;
+    }
+
+    async function forward(dist, draw = true) {
+      const stepSize = 5;
+      const steps = Math.floor(dist / stepSize);
+      const remainder = dist % stepSize;
+
+      for (let i = 0; i < steps; i++) {
+        const newX = pos.x + Math.cos(angle) * stepSize;
+        const newY = pos.y + Math.sin(angle) * stepSize;
+        if (draw) {
+          drawnLines.push({ from: { ...pos }, to: { x: newX, y: newY } });
+        }
+        pos = { x: newX, y: newY };
+        clearCanvas();
+        redrawAllLines();
+        drawArrowhead(pos.x, pos.y, angle);
+        await wait(50 / speed);
+      }
+
+      if (remainder > 0) {
+        const newX = pos.x + Math.cos(angle) * remainder;
+        const newY = pos.y + Math.sin(angle) * remainder;
+        if (draw) {
+          drawnLines.push({ from: { ...pos }, to: { x: newX, y: newY } });
+        }
+        pos = { x: newX, y: newY };
+        clearCanvas();
+        redrawAllLines();
+        drawArrowhead(pos.x, pos.y, angle);
+        await wait(50 / speed);
+      }
+
+      clearCanvas();
+      redrawAllLines();
+    }
+
+    function move(dist) {
+      const newX = pos.x + Math.cos(angle) * dist;
+      const newY = pos.y + Math.sin(angle) * dist;
+      pos = { x: newX, y: newY };
+    }
+
+    function goTo(p) {
+      pos = { ...p };
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function redrawAllLines() {
+      for (const line of drawnLines) {
+        ctx.beginPath();
+        ctx.moveTo(line.from.x, line.from.y);
+        ctx.lineTo(line.to.x, line.to.y);
+        ctx.stroke();
+      }
+    }
+
+    async function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function step1() {
+      drawnLines = [];
+      clearCanvas();
+      pos = {...p0};
+      setHeading(30); await forward(250);
+      setHeading(90); await forward(50); p1 = {...pos};
+      setHeading(150); await forward(250);
+      setHeading(210); await forward(12.25); p2 = {...pos};
+      move(25); p3 = {...pos}; await forward(12.25); p4 = {...pos};
+      setHeading(270); await forward(250);
+      setHeading(330); await forward(50);
+      showStepImage(1);
+    }
+
+    async function step2() {
+      goTo(p4);
+      setHeading(330); await forward(200);
+      setHeading(210); await forward(100);
+      setHeading(90); await forward(50);
+      setHeading(330); await forward(50);
+      showStepImage(2);
+    }
+
+    async function step3() {
+      goTo(p0);
+      setHeading(90); await forward(200);
+      setHeading(330); await forward(50);
+      showStepImage(3);
+    }
+
+    async function step4() {
+      goTo(p1);
+      setHeading(210); await forward(199);
+      setHeading(90); await forward(50);
+      showStepImage(4);
+    }
+
+    async function step5() {
+      goTo(p2);
+      setHeading(330); await forward(237.75);
+      setHeading(210); await forward(100);
+      setHeading(150); await forward(25);
+      setHeading(30); await forward(75);
+      setHeading(150); await forward(212.5);
+      goTo(p2);
+      setHeading(270); await forward(25);
+      showStepImage(5);
+    }
+
+    async function step6() {
+      goTo(p0);
+      setHeading(30); await forward(125);
+      setHeading(90); await forward(50);
+      setHeading(150); await forward(50);
+      showStepImage(6);
+    }
+
+    async function step7() {
+      goTo(p0);
+      setHeading(30); await forward(12.5);
+      setHeading(90); move(12.5); p5 = {...pos};
+      setHeading(30); await forward(100);
+      setHeading(90); await forward(25);
+      setHeading(210); await forward(75); p6 = {...pos};
+      setHeading(90); await forward(125);
+      goTo(p5); setHeading(90); await forward(175);
+      goTo(p6); setHeading(150); await forward(25);
+      showStepImage(7);
+    }
+
+    async function drawAll() {
+      drawnLines = [];
+      hideStepImage(); // kein Bild bei drawAll
+      await step1();
+      await step2();
+      await step3();
+      await step4();
+      await step5();
+      await step6();
+      await step7();
+    }
+  </script>
+</body>
+</html>
